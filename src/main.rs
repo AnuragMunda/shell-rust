@@ -15,6 +15,9 @@ fn main() {
         io::stdin().read_line(&mut command).unwrap();
         if command.trim() == exit0_command  {
             break;
+        } else if command.starts_with("echo") {
+            let substring = &command.trim()[5..];
+            println!("{}", substring)
         }
 
         println!("{}: command not found", command.trim())
