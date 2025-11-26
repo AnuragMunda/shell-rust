@@ -15,7 +15,7 @@ fn main() -> Result<(), std::env::VarError> {
         let trimmed_command = command.trim();
 
         match trimmed_command {
-            "exit 0" => break, // exit command,
+            "exit 0" | "exit" => break, // exit command,
 
             cmd if trimmed_command.starts_with("echo ") => { // print command
                 let text = &cmd[5..];
