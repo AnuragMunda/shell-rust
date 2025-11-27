@@ -1,4 +1,5 @@
 use std::os::unix::fs::PermissionsExt;
+use std::process::Command;
 use std::{env, fs};
 #[allow(unused_imports)]
 use std::io::{self, Write};
@@ -9,6 +10,7 @@ fn main() -> Result<(), std::env::VarError> {
         io::stdout().flush().unwrap();
 
         let mut command = String::new();
+        let path = env::var("PATH").unwrap_or_default();
 
         // Take user input
         io::stdin().read_line(&mut command).unwrap();
@@ -32,7 +34,6 @@ fn main() -> Result<(), std::env::VarError> {
                 _ => {},
                 }
 
-                let path = env::var("PATH").unwrap_or_default();
                 let mut found = false;
 
                 for dir in path.split(':') {
@@ -58,7 +59,33 @@ fn main() -> Result<(), std::env::VarError> {
 
             "" => {}, // Do nothing if command is empty
 
-            _ => println!("{trimmed_command}: command not found"),
+            _ => {
+                let mut found = false;
+
+                let cmd_parts: Vec<&str> = trimmed_command.split(' ').collect();
+                let cmd = cmd_parts[0];
+                let args = &cmd_parts[1..];
+                
+                for dir in path.split(':') {
+                    let full_path = format!("{}/{}", dir, cmd);
+
+                    match fs::metadata(&full_path) {
+                        Ok(meta) => {
+                            let mode = meta.permissions().mode();
+
+                            if mode & 0o111 != 0 {
+                                Command::new(cmd).args(args).status().expect("Failed to execute");
+                                found = true;
+                                break;
+                            }
+                        }
+                        Err(_) => {}
+                    }
+                }
+                if !found {
+                    println!("{cmd}: command not found");
+                }
+            },
         }
     }
     Ok(())
