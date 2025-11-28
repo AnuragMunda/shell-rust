@@ -1,3 +1,4 @@
+use std::env::current_dir;
 use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 use std::{env, fs};
@@ -26,8 +27,8 @@ fn main() -> Result<(), std::env::VarError> {
 
             cmd if trimmed_command.starts_with("type ") => { // returns the "type" of the command
                 let target = &cmd[5..];
-                match target {
-                    "echo" | "exit" | "type" => {
+                match target { // if the argument is a builtin command
+                    "echo" | "exit" | "type" | "pwd" => {
                         println!("{target} is a shell builtin");
                         continue;
                     },
@@ -36,7 +37,7 @@ fn main() -> Result<(), std::env::VarError> {
 
                 let mut found = false;
 
-                for dir in path.split(':') {
+                for dir in path.split(':') { // Check for executable file
                     let full_path = format!("{}/{}", dir, target);
 
                     match fs::metadata(&full_path) {
@@ -57,9 +58,15 @@ fn main() -> Result<(), std::env::VarError> {
                 }
             },
 
+            "pwd" => {
+                let cur_dir = current_dir().unwrap_or_default();
+                println!("{}", cur_dir.display());
+            }
+
             "" => {}, // Do nothing if command is empty
 
             _ => {
+                // Execute the program if program name is passed
                 let mut found = false;
 
                 let cmd_parts: Vec<&str> = trimmed_command.split(' ').collect();
@@ -82,6 +89,8 @@ fn main() -> Result<(), std::env::VarError> {
                         Err(_) => {}
                     }
                 }
+
+                // If program is not found
                 if !found {
                     println!("{cmd}: command not found");
                 }
