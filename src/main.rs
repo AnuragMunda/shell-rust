@@ -1,11 +1,20 @@
-use std::env::current_dir;
+use std::env::{current_dir, set_current_dir};
 use std::os::unix::fs::PermissionsExt;
+use std::path::Path;
 use std::process::Command;
 use std::{env, fs};
 #[allow(unused_imports)]
 use std::io::{self, Write};
 
 fn main() -> Result<(), std::env::VarError> {
+    // Builtin command list
+    const BUILTINS: &[&str] = &[
+        "echo",
+        "exit",
+        "type",
+        "pwd",
+    ];
+
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -27,12 +36,9 @@ fn main() -> Result<(), std::env::VarError> {
 
             cmd if trimmed_command.starts_with("type ") => { // returns the "type" of the command
                 let target = &cmd[5..];
-                match target { // if the argument is a builtin command
-                    "echo" | "exit" | "type" | "pwd" => {
-                        println!("{target} is a shell builtin");
-                        continue;
-                    },
-                _ => {},
+                if BUILTINS.contains(&target) {
+                    println!("{target} is a shell builtin");
+                    continue;
                 }
 
                 let mut found = false;
@@ -58,7 +64,15 @@ fn main() -> Result<(), std::env::VarError> {
                 }
             },
 
-            "pwd" => {
+            cmd if trimmed_command.starts_with("cd ") => {
+                let new_dir = Path::new(&cmd[3..]);
+                match set_current_dir(&new_dir) {
+                    Ok(_) => {},
+                    Err(_) => println!("cd: {}: No such file or directory", new_dir.display()),
+                }
+            },
+
+            "pwd" => { // returns the current path of the shell
                 let cur_dir = current_dir().unwrap_or_default();
                 println!("{}", cur_dir.display());
             }
