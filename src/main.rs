@@ -14,26 +14,34 @@ fn main() -> Result<(), std::env::VarError> {
         "pwd",
     ];
 
+    // Iterate over the commands until exited
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
 
         let mut command = String::new();
-        let path = env::var("PATH").unwrap_or_default();
+        let path = env::var("PATH").unwrap_or_default(); // Get the value of PATH environment variable
 
         // Take user input
         io::stdin().read_line(&mut command).unwrap();
         let trimmed_command = command.trim();
 
+        // Match the user command with expected functionality
         match trimmed_command {
-            "exit 0" | "exit" => break, // exit command,
-
-            cmd if trimmed_command.starts_with("echo ") => { // print command
+            // `exit` command
+            // Exits the shell
+            "exit 0" | "exit" => break,
+            
+            // `echo` command
+            // Prints the user input text on the screen
+            cmd if trimmed_command.starts_with("echo ") => {
                 let text = &cmd[5..];
                 println!("{text}");
             },
 
-            cmd if trimmed_command.starts_with("type ") => { // returns the "type" of the command
+            // `type` command
+            // Returns whether the passed argument is a bulitin command or an executable
+            cmd if trimmed_command.starts_with("type ") => {
                 let target = &cmd[5..];
                 if BUILTINS.contains(&target) {
                     println!("{target} is a shell builtin");
@@ -58,18 +66,20 @@ fn main() -> Result<(), std::env::VarError> {
                         Err(_) => {}
                     }
                 }
-                if !found {
+                if !found { // if passed arguement is not recognised 
                     println!("{target}: not found");
                 }
             },
 
+            // `cd` command
+            // Changes the current directory to the input path
             cmd if trimmed_command.starts_with("cd ") => {
                 let path_arg = &cmd[3..];
                 let home = env::var("HOME").unwrap_or_default();
 
-                if path_arg == "~" {
+                if path_arg == "~" { // `~` - HOME directory
                     env::set_current_dir(home).unwrap_or_default();
-                } else {
+                } else { // Handles absolute and relative paths
                     let new_dir = Path::new(path_arg);
                     match env::set_current_dir(&new_dir) {
                         Ok(_) => {},
@@ -78,13 +88,17 @@ fn main() -> Result<(), std::env::VarError> {
                 }
             },
 
-            "pwd" => { // returns the current path of the shell
+            // `pwd` command
+            // Returns the current working directory
+            "pwd" => {
                 let cur_dir = env::current_dir().unwrap_or_default();
                 println!("{}", cur_dir.display());
             }
 
             "" => {}, // Do nothing if command is empty
 
+            // Handle other cases
+            // Handle running a program
             _ => {
                 // Execute the program if program name is passed
                 let mut found = false;
@@ -110,7 +124,7 @@ fn main() -> Result<(), std::env::VarError> {
                     }
                 }
 
-                // If program is not found
+                // If command is not found
                 if !found {
                     println!("{cmd}: command not found");
                 }
