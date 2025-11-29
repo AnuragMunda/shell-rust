@@ -1,4 +1,3 @@
-use std::env::{current_dir, set_current_dir};
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::process::Command;
@@ -65,15 +64,22 @@ fn main() -> Result<(), std::env::VarError> {
             },
 
             cmd if trimmed_command.starts_with("cd ") => {
-                let new_dir = Path::new(&cmd[3..]);
-                match set_current_dir(&new_dir) {
-                    Ok(_) => {},
-                    Err(_) => println!("cd: {}: No such file or directory", new_dir.display()),
+                let path_arg = &cmd[3..];
+                let home = env::var("HOME").unwrap_or_default();
+
+                if path_arg == "~" {
+                    env::set_current_dir(home).unwrap_or_default();
+                } else {
+                    let new_dir = Path::new(path_arg);
+                    match env::set_current_dir(&new_dir) {
+                        Ok(_) => {},
+                        Err(_) => println!("cd: {}: No such file or directory", new_dir.display()),
+                    }
                 }
             },
 
             "pwd" => { // returns the current path of the shell
-                let cur_dir = current_dir().unwrap_or_default();
+                let cur_dir = env::current_dir().unwrap_or_default();
                 println!("{}", cur_dir.display());
             }
 
