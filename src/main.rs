@@ -35,16 +35,18 @@ fn main() -> Result<(), std::env::VarError> {
             // `echo` command
             // Prints the user input text on the screen
             cmd if trimmed_command.starts_with("echo ") => {
-                let text = &cmd[5..];
+                let text: &str = &cmd[5..];
+                let mut filtered_text = String::new();
 
                 if text.starts_with("'") && text.ends_with("'") {
                     let unquoted_text = text.replace("'", "");
-                    println!("{unquoted_text}");
+                    filtered_text.push_str(&unquoted_text);
                 } else {
-                    let filtered_text = text.split_whitespace().collect::<Vec<&str>>().join(" ");
-                    let new_text = filtered_text.replace("''", "");
-                    println!("{new_text}");
-                }
+                    let text_without_whitespaces = text.split_whitespace().collect::<Vec<&str>>().join(" ");
+                    let new_text = text_without_whitespaces.replace("''", "");
+                    filtered_text.push_str(&new_text);
+            }
+                println!("{filtered_text}");
             },
 
             // `type` command
